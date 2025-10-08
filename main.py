@@ -1,5 +1,6 @@
 import telebot
 from telebot import types
+import db  # Импортируем наш модуль для работы с базой данных
 
 # Вставьте сюда ваш токен бота
 BOT_TOKEN = '8335870133:AAHwcXoy3usOWT4Y9F8cSOPiHwX5OO33hI8'
@@ -9,6 +10,9 @@ bot = telebot.TeleBot(BOT_TOKEN)
 # Приветственное сообщение и основное меню
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
+    # Добавляем пользователя в базу данных при первом контакте
+    db.add_user(message.from_user.id, message.from_user.username)
+    
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn_subscribe = types.KeyboardButton('Оформить подписку')
     btn_info = types.KeyboardButton('Информация')
@@ -37,5 +41,5 @@ def handle_info_button(message):
 
 # Запуск бота
 if __name__ == "__main__":
+    db.init_db()  # Инициализируем базу данных при запуске
     bot.polling(none_stop=True)
-
