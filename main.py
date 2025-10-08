@@ -60,7 +60,6 @@ def handle_tariff_callback(call):
 
     if invoice_data and invoice_data.get('ok'):
         invoice_url = invoice_data['result']['pay_url']
-        # В тестовом режиме invoice_id = 'TEST_INVOICE_ID', поэтому добавляем его явно
         invoice_id = invoice_data['result']['invoice_id']
         
         markup = types.InlineKeyboardMarkup()
@@ -79,17 +78,13 @@ def handle_tariff_callback(call):
 @bot.callback_query_handler(func=lambda call: call.data.startswith('check_'))
 def handle_check_payment(call):
     try:
-        # В тестовом режиме invoice_id будет 'TEST_INVOICE_ID',
-        # поэтому мы можем его не разбирать, а просто проверить
-        # Это предотвратит ошибку, если callback_data будет неполной
         data_parts = call.data.split('_')
-        # Получаем тариф, который нужно обновить
-        tariff_name = data_parts[2] if len(data_parts) > 2 else 'mini' 
+        invoice_id = data_parts[1]
+        tariff_name = data_parts[2]
         
         bot.answer_callback_query(call.id, text="Проверяю статус платежа...")
         
-        # Проверяем статус через payments.py
-        status = payments.check_invoice_status('TEST_INVOICE_ID')
+        status = payments.check_invoice_status(invoice_id)
         
         if status == 'paid':
             tariff_info = TARIFFS.get(tariff_name)
