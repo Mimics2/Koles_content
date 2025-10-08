@@ -1,4 +1,5 @@
-import sqlite3
+
+ import sqlite3
 
 DATABASE_NAME = "bot_database.db"
 
@@ -52,11 +53,6 @@ def get_user(user_id):
 def update_subscription(user_id, subscription_type, end_date):
     """
     Обновляет подписку пользователя в базе данных.
-    
-    Args:
-        user_id (int): ID пользователя Telegram.
-        subscription_type (str): Тип подписки ('mini', 'standard', 'pro').
-        end_date (str): Дата окончания подписки в формате ISO 8601 (YYYY-MM-DD).
     """
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
