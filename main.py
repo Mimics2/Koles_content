@@ -1,8 +1,8 @@
 import telebot
 from telebot import types
 import datetime
-import db
-import payments
+import db  # Наш модуль для работы с базой данных
+import payments  # Наш модуль для работы с платежами
 
 # Замените на ваш токен бота и токен CryptoPayBot
 BOT_TOKEN = '8335870133:AAHwcXoy3usOWT4Y9F8cSOPiHwX5OO33hI8'
@@ -80,21 +80,29 @@ def handle_tariff_callback(call):
 # Обработка кнопки "Я оплатил"
 @bot.callback_query_handler(func=lambda call: call.data.startswith('check_'))
 def handle_check_payment(call):
-    data_parts = call.data.split('_')
-    invoice_id = data_parts[1]
-    tariff_name = data_parts[2]
-    
-    status = payments.check_invoice_status(invoice_id)
-    
-    if status == 'paid':
-        # Обновляем базу данных
-        tariff_info = TARIFFS.get(tariff_name)
-        end_date = datetime.date.today() + datetime.timedelta(days=tariff_info['duration_days'])
-        db.update_subscription(call.from_user.id, tariff_name, end_date.isoformat())
+    try:
+        data_parts = call.data.split('_')
+        invoice_id = data_parts[1]
+        tariff_name = data_parts[2]
         
-        bot.send_message(call.message.chat.id, "✅ Платеж успешно подтвержден! Ваша подписка активирована.")
-    else:
-        bot.send_message(call.message.chat.id, f"Статус платежа: **{status}**. Пожалуйста, подождите или попробуйте еще раз.")
+        # Уведомляем Telegram, что мы получили callback
+        bot.answer_callback_query(call.id, text="Проверяю статус платежа...")
+        
+        status = payments.check_invoice_status(invoice_id)
+        
+        if status == 'paid':
+            # Обновляем базу данных
+            tariff_info = TARIFFS.get(tariff_name)
+            end_date = datetime.date.today() + datetime.timedelta(days=tariff_info['duration_days'])
+            db.update_subscription(call.from_user.id, tariff_name, end_date.isoformat())
+            
+            bot.send_message(call.message.chat.id, "✅ Платеж успешно подтвержден! Ваша подписка активирована.")
+        else:
+            bot.send_message(call.message.chat.id, f"Статус платежа: **{status}**. Пожалуйста, подождите или попробуйте еще раз.")
+            
+    except Exception as e:
+        # Отправляем сообщение об ошибке, если что-то пошло не так
+        bot.send_message(call.message.chat.id, f"Произошла ошибка при проверке платежа: {e}")
 
 # Обработка команды /info и кнопки "Информация"
 @bot.message_handler(commands=['info'], func=lambda message: True)
@@ -119,4 +127,3 @@ def info_command(message):
 if __name__ == "__main__":
     db.init_db()
     bot.polling(none_stop=True)
-
