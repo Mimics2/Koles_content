@@ -4,7 +4,7 @@ import requests
 TEST_MODE = True
 
 # >>>>> ВСТАВЬТЕ СЮДА ВАШ ТОКЕН CRYPTO PAY BOT <<<<<
-CRYPTO_PAY_BOT_TOKEN = '470214:AAtsGnRZSFgSV3t0yqvHfoepEW37pAcm5Ao'
+CRYPTO_PAY_BOT_TOKEN = '470987:AAcaG7LpeoQLmTsMGEnP9bgLqB3j4fMFuac'
 API_URL = 'https://pay.crypt.bot/api/'
 
 def create_invoice(amount, currency, description, payload):
