@@ -3,6 +3,7 @@ import requests
 # Переключите на False, когда будете готовы принимать реальные платежи
 TEST_MODE = True
 
+# ВАШ API-токен CryptoPayBot
 CRYPTO_PAY_BOT_TOKEN = '470214:AAtsGnRZSFgSV3t0yqvHfoepEW37pAcm5Ao'
 API_URL = 'https://pay.crypt.bot/api/'
 
