@@ -1,5 +1,4 @@
-
- import sqlite3
+import sqlite3
 
 DATABASE_NAME = "bot_database.db"
 
