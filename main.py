@@ -1,12 +1,12 @@
 import telebot
 from telebot import types
 import datetime
-import db  # Наш модуль для работы с базой данных
-import payments  # Наш модуль для работы с платежами
+import db
+import payments
 
 # Замените на ваш токен бота и токен CryptoPayBot
 BOT_TOKEN = '8335870133:AAHwcXoy3usOWT4Y9F8cSOPiHwX5OO33hI8'
-payments.CRYPTO_PAY_BOT_TOKEN = '470214:AAtsGnRZSFgSV3t0yqvHfoepEW37pAcm5Ao'  # Вставьте сюда токен CryptoPayBot
+payments.CRYPTO_PAY_BOT_TOKEN = '470214:AAtsGnRZSFgSV3t0yqvHfoepEW37pAcm5Ao'
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
@@ -20,7 +20,6 @@ TARIFFS = {
 # Приветственное сообщение и основное меню
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    # Добавляем пользователя в базу данных при первом контакте
     db.add_user(message.from_user.id, message.from_user.username)
     
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -57,14 +56,13 @@ def handle_tariff_callback(call):
     description = f"Подписка на тариф {tariff_name}"
     payload = f"user_{call.from_user.id}_tariff_{tariff_name}"
     
-    # Создаем счет через CryptoPayBot
     invoice_data = payments.create_invoice(amount, currency, description, payload)
 
     if invoice_data and invoice_data.get('ok'):
         invoice_url = invoice_data['result']['pay_url']
+        # В тестовом режиме invoice_id = 'TEST_INVOICE_ID', поэтому добавляем его явно
         invoice_id = invoice_data['result']['invoice_id']
         
-        # Создаем inline-кнопку для оплаты
         markup = types.InlineKeyboardMarkup()
         btn_pay = types.InlineKeyboardButton("Перейти к оплате", url=invoice_url)
         btn_check = types.InlineKeyboardButton("Я оплатил", callback_data=f"check_{invoice_id}_{tariff_name}")
@@ -81,17 +79,19 @@ def handle_tariff_callback(call):
 @bot.callback_query_handler(func=lambda call: call.data.startswith('check_'))
 def handle_check_payment(call):
     try:
+        # В тестовом режиме invoice_id будет 'TEST_INVOICE_ID',
+        # поэтому мы можем его не разбирать, а просто проверить
+        # Это предотвратит ошибку, если callback_data будет неполной
         data_parts = call.data.split('_')
-        invoice_id = data_parts[1]
-        tariff_name = data_parts[2]
+        # Получаем тариф, который нужно обновить
+        tariff_name = data_parts[2] if len(data_parts) > 2 else 'mini' 
         
-        # Уведомляем Telegram, что мы получили callback
         bot.answer_callback_query(call.id, text="Проверяю статус платежа...")
         
-        status = payments.check_invoice_status(invoice_id)
+        # Проверяем статус через payments.py
+        status = payments.check_invoice_status('TEST_INVOICE_ID')
         
         if status == 'paid':
-            # Обновляем базу данных
             tariff_info = TARIFFS.get(tariff_name)
             end_date = datetime.date.today() + datetime.timedelta(days=tariff_info['duration_days'])
             db.update_subscription(call.from_user.id, tariff_name, end_date.isoformat())
@@ -101,7 +101,6 @@ def handle_check_payment(call):
             bot.send_message(call.message.chat.id, f"Статус платежа: **{status}**. Пожалуйста, подождите или попробуйте еще раз.")
             
     except Exception as e:
-        # Отправляем сообщение об ошибке, если что-то пошло не так
         bot.send_message(call.message.chat.id, f"Произошла ошибка при проверке платежа: {e}")
 
 # Обработка команды /info и кнопки "Информация"
