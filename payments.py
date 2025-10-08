@@ -3,7 +3,7 @@ import requests
 # Переключите на False, когда будете готовы принимать реальные платежи
 TEST_MODE = True
 
-# >>>>> ВАШ ТОКЕН CRYPTO PAY BOT <<<<<
+# >>>>> ВСТАВЬТЕ СЮДА ВАШ ТОКЕН CRYPTO PAY BOT <<<<<
 CRYPTO_PAY_BOT_TOKEN = '470214:AAtsGnRZSFgSV3t0yqvHfoepEW37pAcm5Ao'
 API_URL = 'https://pay.crypt.bot/api/'
 
@@ -13,6 +13,7 @@ def create_invoice(amount, currency, description, payload):
     В тестовом режиме возвращает фейковый успешный результат.
     """
     if TEST_MODE:
+        # Возвращаем фейковый ответ, имитирующий успешное создание счета
         print("Внимание: работает тестовый режим, создается фейковый счет.")
         return {
             'ok': True,
@@ -22,6 +23,7 @@ def create_invoice(amount, currency, description, payload):
             }
         }
     
+    # Код для реального создания счета
     url = f"{API_URL}createInvoice"
     headers = {
         'Crypto-Pay-API-Token': CRYPTO_PAY_BOT_TOKEN
@@ -48,8 +50,10 @@ def check_invoice_status(invoice_id):
     В тестовом режиме всегда возвращает 'paid'.
     """
     if TEST_MODE:
+        # Всегда возвращаем 'paid' для тестирования
         return 'paid'
     
+    # Код для реальной проверки статуса счета
     url = f"{API_URL}getInvoices"
     headers = {
         'Crypto-Pay-API-Token': CRYPTO_PAY_BOT_TOKEN
