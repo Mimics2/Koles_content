@@ -1,12 +1,11 @@
 import telebot
 from telebot import types
 import datetime
-import db
-import payments
+import db  # Наш модуль для работы с базой данных
+import payments  # Наш модуль для работы с платежами
 
-# Замените на ваш токен бота и токен CryptoPayBot
+# Замените на ваш токен бота
 BOT_TOKEN = '8335870133:AAHwcXoy3usOWT4Y9F8cSOPiHwX5OO33hI8'
-payments.CRYPTO_PAY_BOT_TOKEN = '470214:AAtsGnRZSFgSV3t0yqvHfoepEW37pAcm5Ao'
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
@@ -20,6 +19,7 @@ TARIFFS = {
 # Приветственное сообщение и основное меню
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
+    # Добавляем пользователя в базу данных при первом контакте
     db.add_user(message.from_user.id, message.from_user.username)
     
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -78,22 +78,27 @@ def handle_tariff_callback(call):
 @bot.callback_query_handler(func=lambda call: call.data.startswith('check_'))
 def handle_check_payment(call):
     try:
-        # Для тестирования мы просто будем обновлять подписку
-        # Игнорируя проверку платежа, пока не решим проблему с API
-        
         data_parts = call.data.split('_')
-        tariff_name = data_parts[2] if len(data_parts) > 2 else 'mini'
+        # Получаем invoice_id и tariff_name из callback_data
+        invoice_id = data_parts[1]
+        tariff_name = data_parts[2]
         
-        bot.answer_callback_query(call.id, text="Активирую подписку...")
+        bot.answer_callback_query(call.id, text="Проверяю статус платежа...")
         
-        tariff_info = TARIFFS.get(tariff_name)
-        end_date = datetime.date.today() + datetime.timedelta(days=tariff_info['duration_days'])
-        db.update_subscription(call.from_user.id, tariff_name, end_date.isoformat())
+        status = payments.check_invoice_status(invoice_id)
         
-        bot.send_message(call.message.chat.id, "✅ Тестовая подписка активирована.")
+        if status == 'paid':
+            # Если оплата прошла, обновляем базу данных
+            tariff_info = TARIFFS.get(tariff_name)
+            end_date = datetime.date.today() + datetime.timedelta(days=tariff_info['duration_days'])
+            db.update_subscription(call.from_user.id, tariff_name, end_date.isoformat())
+            
+            bot.send_message(call.message.chat.id, "✅ Платеж успешно подтвержден! Ваша подписка активирована.")
+        else:
+            bot.send_message(call.message.chat.id, f"Статус платежа: **{status}**. Пожалуйста, подождите или попробуйте еще раз.")
             
     except Exception as e:
-        bot.send_message(call.message.chat.id, f"Произошла ошибка при активации подписки: {e}")
+        bot.send_message(call.message.chat.id, f"Произошла ошибка при проверке платежа: {e}")
 
 # Обработка команды /info и кнопки "Информация"
 @bot.message_handler(commands=['info'], func=lambda message: True)
